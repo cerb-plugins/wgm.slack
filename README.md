@@ -1,4 +1,4 @@
-Cerb Plugins - wgm.google
+Cerb Plugins - wgm.slack
 ===========================================
 Copyright (C) 2017 Webgroup Media, LLC.
 [http://cerb.io/](http://cerb.io/)
@@ -10,8 +10,8 @@ This plugin provides integration with [Slack](https://www.slack.com/) via their 
 Installation
 ------------
 * Make a new [Slack application](https://api.slack.com/apps).
-* Download the plugin **Setup->Plugins->Plugin** Library.
-* Enable the plugin and configure your Slack app credentials.
+* Download the plugin **Setup->Plugins->Plugin Library**.
+* Enable the plugin and configure your Slack app credentials in **Setup->Services**.
 
 Credits
 -------
