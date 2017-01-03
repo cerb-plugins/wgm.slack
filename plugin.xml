@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.devblocks.com/schema/plugin.xsd">
+	<id>wgm.slack</id>
+	<name>Slack Integration</name>
+	<description>This plugin provides integration with Slack services via their API.</description>
+	<author>Webgroup Media, LLC.</author>
+	<version>0.0.1</version>
+	<link>http://www.cerbweb.com/book/latest/plugins/wgm.slack.html</link>
+	<image>plugin.png</image>
+ 
+ 	<!-- Requirements -->
+
+	<requires>
+		<app_version min="7.3" max="7.3.99" />
+	</requires>
+ 
+	<!-- Plugin Dependencies -->
+	
+	<dependencies>
+		<require plugin_id="cerberusweb.core" version="7.3.0" />
+	</dependencies>
+
+	<!-- Exported Classes -->
+	
+	<!--
+	<class_loader>
+		<file path="api/App.php">
+			<class name="WgmLinkedIn_API" />
+		</file>
+	</class_loader>
+	-->
+
+	<!-- Extensions -->
+ 
+	<extensions>
+
+		<!-- Setup Page Menu Item -->
+
+		<extension point="cerberusweb.ui.page.menu.item">
+			<id>wgm.slack.setup.menu</id>
+			<name>Slack Plugins Menu Item</name>
+			<class>
+				<file>api/App.php</file>
+				<name>WgmSlack_SetupMenuItem</name>
+			</class>
+			<params>
+				<param key="page_id" value="core.page.configuration" />
+				<param key="menu_id" value="core.setup.menu.services" />
+			</params>
+		</extension>
+		
+		<!-- Setup Page Sections -->
+		
+		<extension point="cerberusweb.ui.page.section">
+			<id>wgm.slack.setup.page</id>
+			<name>Setup Page Slack Section</name>
+			<class>
+				<file>api/App.php</file>
+				<name>WgmSlack_SetupSection</name>
+			</class>
+			<params>
+				<param key="page_id" value="core.page.configuration" />
+				<param key="uri" value="slack" />
+			</params>
+		</extension>
+		
+		<!-- Service Providers -->
+		
+		<extension point="cerb.service.provider">
+			<id>wgm.slack.service.provider</id>
+			<name>Slack</name>
+			<class>
+				<file>api/App.php</file>
+				<name>ServiceProvider_Slack</name>
+			</class>
+			<params>
+				<param key="contexts">
+					<value>
+						<data key="cerberusweb.contexts.app" />
+						<data key="cerberusweb.contexts.worker" />
+					</value>
+				</param>
+			</params>
+		</extension>
+
+    </extensions> 
+</plugin>
