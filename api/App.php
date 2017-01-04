@@ -21,12 +21,9 @@ class WgmSlack_SetupSection extends Extension_PageSection {
 		
 		$visit->set(ChConfigurationPage::ID, 'slack');
 		
-		$params = array(
-			'consumer_key' => DevblocksPlatform::getPluginSetting('wgm.slack','consumer_key',''),
-			'consumer_secret' => DevblocksPlatform::getPluginSetting('wgm.slack','consumer_secret',''),
-		);
-		$tpl->assign('params', $params);
-
+		$credentials = DevblocksPlatform::getPluginSetting('wgm.slack','credentials',false,true,true);
+		$tpl->assign('credentials', $credentials);
+		
 		$tpl->display('devblocks:wgm.slack::setup/index.tpl');
 	}
 	
@@ -38,8 +35,11 @@ class WgmSlack_SetupSection extends Extension_PageSection {
 			if(empty($consumer_key) || empty($consumer_secret))
 				throw new Exception("Both the 'Client ID' and 'Client Secret' are required.");
 			
-			DevblocksPlatform::setPluginSetting('wgm.slack', 'consumer_key', $consumer_key);
-			DevblocksPlatform::setPluginSetting('wgm.slack', 'consumer_secret', $consumer_secret);
+			$credentials = [
+				'consumer_key' => $consumer_key,
+				'consumer_secret' => $consumer_secret,
+			];
+			DevblocksPlatform::setPluginSetting('wgm.slack','credentials',$credentials,true,true);
 			
 			echo json_encode(array('status'=>true, 'message'=>'Saved!'));
 			return;
@@ -56,8 +56,11 @@ class ServiceProvider_Slack extends Extension_ServiceProvider implements IServic
 	const ID = 'wgm.slack.service.provider';
 
 	private function _getAppKeys() {
-		$consumer_key = DevblocksPlatform::getPluginSetting('wgm.slack','consumer_key','');
-		$consumer_secret = DevblocksPlatform::getPluginSetting('wgm.slack','consumer_secret','');
+		if(false == ($credentials = DevblocksPlatform::getPluginSetting('wgm.slack','credentials',false,true,true)))
+			return false;
+		
+		@$consumer_key = $credentials['consumer_key'];
+		@$consumer_secret = $credentials['consumer_secret'];
 		
 		if(empty($consumer_key) || empty($consumer_secret))
 			return false;

@@ -19,6 +19,12 @@
 	<dependencies>
 		<require plugin_id="cerberusweb.core" version="7.3.0" />
 	</dependencies>
+	
+	<!-- Patches -->
+	
+	<patches>
+		<patch version="7.3.0" revision="1" file="patches/7.3.0.php" />
+	</patches>
 
 	<!-- Exported Classes -->
 	
@@ -38,7 +44,7 @@
 
 		<extension point="cerberusweb.ui.page.menu.item">
 			<id>wgm.slack.setup.menu</id>
-			<name>Slack Plugins Menu Item</name>
+			<name>Slack</name>
 			<class>
 				<file>api/App.php</file>
 				<name>WgmSlack_SetupMenuItem</name>
