@@ -55,6 +55,40 @@ endif;
 class ServiceProvider_Slack extends Extension_ServiceProvider implements IServiceProvider_OAuth, IServiceProvider_HttpRequestSigner {
 	const ID = 'wgm.slack.service.provider';
 
+	function renderConfigForm(Model_ConnectedAccount $account) {
+		$tpl = DevblocksPlatform::getTemplateService();
+		$active_worker = CerberusApplication::getActiveWorker();
+		
+		$tpl->assign('account', $account);
+		
+		$params = $account->decryptParams($active_worker);
+		$tpl->assign('params', $params);
+		
+		$tpl->display('devblocks:wgm.slack::provider/slack.tpl');
+	}
+	
+	function saveConfigForm(Model_ConnectedAccount $account, array &$params) {
+		@$edit_params = DevblocksPlatform::importGPC($_POST['params'], 'array', array());
+		
+		$active_worker = CerberusApplication::getActiveWorker();
+		$encrypt = DevblocksPlatform::getEncryptionService();
+		
+		// Decrypt OAuth params
+		if(isset($edit_params['params_json'])) {
+			if(false == ($outh_params_json = $encrypt->decrypt($edit_params['params_json'])))
+				return "The connected account authentication is invalid.";
+				
+			if(false == ($oauth_params = json_decode($outh_params_json, true)))
+				return "The connected account authentication is malformed.";
+			
+			if(is_array($oauth_params))
+			foreach($oauth_params as $k => $v)
+				$params[$k] = $v;
+		}
+		
+		return true;
+	}
+	
 	private function _getAppKeys() {
 		if(false == ($credentials = DevblocksPlatform::getPluginSetting('wgm.slack','credentials',false,true,true)))
 			return false;
@@ -71,8 +105,11 @@ class ServiceProvider_Slack extends Extension_ServiceProvider implements IServic
 		);
 	}
 	
-	function renderPopup() {
-		@$view_id = DevblocksPlatform::importGPC($_REQUEST['view_id'], 'string', '');
+	function oauthRender() {
+		@$form_id = DevblocksPlatform::importGPC($_REQUEST['form_id'], 'string', '');
+		
+		// Store the $form_id in the session
+		$_SESSION['oauth_form_id'] = $form_id;
 		
 		$url_writer = DevblocksPlatform::getUrlService();
 		
@@ -83,7 +120,6 @@ class ServiceProvider_Slack extends Extension_ServiceProvider implements IServic
 		$oauth = DevblocksPlatform::getOAuthService($app_keys['key'], $app_keys['secret']);
 		
 		// Persist the view_id in the session
-		$_SESSION['oauth_view_id'] = $view_id;
 		$_SESSION['oauth_state'] = CerberusApplication::generatePassword(24);
 		
 		// OAuth callback
@@ -101,8 +137,9 @@ class ServiceProvider_Slack extends Extension_ServiceProvider implements IServic
 	}
 	
 	function oauthCallback() {
-		@$view_id = $_SESSION['oauth_view_id'];
+		@$form_id = $_SESSION['oauth_form_id'];
 		@$oauth_state = $_SESSION['oauth_state'];
+		unset($_SESSION['oauth_form_id']);
 		
 		@$code = DevblocksPlatform::importGPC($_REQUEST['code'], 'string', '');
 		@$state = DevblocksPlatform::importGPC($_REQUEST['state'], 'string', '');
@@ -110,6 +147,7 @@ class ServiceProvider_Slack extends Extension_ServiceProvider implements IServic
 		
 		$active_worker = CerberusApplication::getActiveWorker();
 		$url_writer = DevblocksPlatform::getUrlService();
+		$encrypt = DevblocksPlatform::getEncryptionService();
 		
 		$redirect_url = $url_writer->write(sprintf('c=oauth&a=callback&ext=%s', ServiceProvider_Slack::ID), true);
 		
@@ -159,29 +197,15 @@ class ServiceProvider_Slack extends Extension_ServiceProvider implements IServic
 		if(!is_array($json) || !isset($json['user']) && !is_array($json['user']) && !isset($json['user']['name']))
 			return false;
 		
-		$label .= sprintf(": %s", $json['user']['name']);
+		$label = $json['user']['name'];
+		$params['label'] = $label;
 		
-		// Save the account
-		
-		$id = DAO_ConnectedAccount::create(array(
-			DAO_ConnectedAccount::NAME => $label,
-			DAO_ConnectedAccount::EXTENSION_ID => ServiceProvider_Slack::ID,
-			DAO_ConnectedAccount::OWNER_CONTEXT => CerberusContexts::CONTEXT_WORKER,
-			DAO_ConnectedAccount::OWNER_CONTEXT_ID => $active_worker->id,
-		));
-		
-		DAO_ConnectedAccount::setAndEncryptParams($id, $params);
-		
-		if($view_id) {
-			echo sprintf("<script>window.opener.genericAjaxGet('view%s', 'c=internal&a=viewRefresh&id=%s');</script>",
-				rawurlencode($view_id),
-				rawurlencode($view_id)
-			);
-			
-			C4_AbstractView::setMarqueeContextCreated($view_id, CerberusContexts::CONTEXT_CONNECTED_ACCOUNT, $id);
-		}
-		
-		echo "<script>window.close();</script>";
+		// Output
+		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl->assign('form_id', $form_id);
+		$tpl->assign('label', $label);
+		$tpl->assign('params_json', $encrypt->encrypt(json_encode($params)));
+		$tpl->display('devblocks:cerberusweb.core::internal/connected_account/oauth_callback.tpl');
 	}
 	
 	function authenticateHttpRequest(Model_ConnectedAccount $account, &$ch, &$verb, &$url, &$body, &$headers) {
