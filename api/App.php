@@ -4,7 +4,7 @@ class WgmSlack_SetupMenuItem extends Extension_PageMenuItem {
 	const POINT = 'wgm.slack.setup.menu';
 	
 	function render() {
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$tpl->assign('extension', $this);
 		$tpl->display('devblocks:wgm.slack::setup/menu_item.tpl');
 	}
@@ -16,7 +16,7 @@ class WgmSlack_SetupSection extends Extension_PageSection {
 	const ID = 'wgm.slack.setup.page';
 	
 	function render() {
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$visit = CerberusApplication::getVisit();
 		
 		$visit->set(ChConfigurationPage::ID, 'slack');
@@ -56,7 +56,7 @@ class ServiceProvider_Slack extends Extension_ServiceProvider implements IServic
 	const ID = 'wgm.slack.service.provider';
 
 	function renderConfigForm(Model_ConnectedAccount $account) {
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$active_worker = CerberusApplication::getActiveWorker();
 		
 		$tpl->assign('account', $account);
@@ -71,7 +71,7 @@ class ServiceProvider_Slack extends Extension_ServiceProvider implements IServic
 		@$edit_params = DevblocksPlatform::importGPC($_POST['params'], 'array', array());
 		
 		$active_worker = CerberusApplication::getActiveWorker();
-		$encrypt = DevblocksPlatform::getEncryptionService();
+		$encrypt = DevblocksPlatform::services()->encryption();
 		
 		// Decrypt OAuth params
 		if(isset($edit_params['params_json'])) {
@@ -111,13 +111,13 @@ class ServiceProvider_Slack extends Extension_ServiceProvider implements IServic
 		// Store the $form_id in the session
 		$_SESSION['oauth_form_id'] = $form_id;
 		
-		$url_writer = DevblocksPlatform::getUrlService();
+		$url_writer = DevblocksPlatform::services()->url();
 		
 		// [TODO] Report about missing app keys
 		if(false == ($app_keys = $this->_getAppKeys()))
 			return false;
 		
-		$oauth = DevblocksPlatform::getOAuthService($app_keys['key'], $app_keys['secret']);
+		$oauth = DevblocksPlatform::services()->oauth($app_keys['key'], $app_keys['secret']);
 		
 		// Persist the view_id in the session
 		$_SESSION['oauth_state'] = CerberusApplication::generatePassword(24);
@@ -129,7 +129,7 @@ class ServiceProvider_Slack extends Extension_ServiceProvider implements IServic
 			'https://slack.com/oauth/authorize',
 			rawurlencode($app_keys['key']),
 			rawurlencode($redirect_url),
-			rawurlencode('channels:read chat:write:bot chat:write:user im:read im:write users:read'), // identity.basic 
+			rawurlencode('channels:read chat:write:bot chat:write:user im:read im:write users:read users.profile:read'), // identity.basic 
 			rawurlencode($_SESSION['oauth_state'])
 		);
 		
@@ -146,8 +146,8 @@ class ServiceProvider_Slack extends Extension_ServiceProvider implements IServic
 		@$error = DevblocksPlatform::importGPC($_REQUEST['error'], 'string', '');
 		
 		$active_worker = CerberusApplication::getActiveWorker();
-		$url_writer = DevblocksPlatform::getUrlService();
-		$encrypt = DevblocksPlatform::getEncryptionService();
+		$url_writer = DevblocksPlatform::services()->url();
+		$encrypt = DevblocksPlatform::services()->encryption();
 		
 		$redirect_url = $url_writer->write(sprintf('c=oauth&a=callback&ext=%s', ServiceProvider_Slack::ID), true);
 		
@@ -159,7 +159,7 @@ class ServiceProvider_Slack extends Extension_ServiceProvider implements IServic
 		
 		$access_token_url = 'https://slack.com/api/oauth.access';
 		
-		$oauth = DevblocksPlatform::getOAuthService($app_keys['key'], $app_keys['secret']);
+		$oauth = DevblocksPlatform::services()->oauth($app_keys['key'], $app_keys['secret']);
 		$oauth->setTokens($code);
 		
 		$params = $oauth->getAccessToken($access_token_url, array(
@@ -201,7 +201,7 @@ class ServiceProvider_Slack extends Extension_ServiceProvider implements IServic
 		$params['label'] = $label;
 		
 		// Output
-		$tpl = DevblocksPlatform::getTemplateService();
+		$tpl = DevblocksPlatform::services()->template();
 		$tpl->assign('form_id', $form_id);
 		$tpl->assign('label', $label);
 		$tpl->assign('params_json', $encrypt->encrypt(json_encode($params)));
