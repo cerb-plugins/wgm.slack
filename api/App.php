@@ -211,21 +211,11 @@ class ServiceProvider_Slack extends Extension_ServiceProvider implements IServic
 	function authenticateHttpRequest(Model_ConnectedAccount $account, &$ch, &$verb, &$url, &$body, &$headers) {
 		$credentials = $account->decryptParams();
 		
-		if(
-			!isset($credentials['access_token'])
-		)
+		if(!isset($credentials['access_token']))
 			return false;
 		
-		if(false == ($url_parts = parse_url($url)))
-			return false;
-		
-		if(false !== stripos($url,'?')) {
-			$url .= '&token=' . rawurlencode($credentials['access_token']);
-		} else {
-			$url .= '?token=' . rawurlencode($credentials['access_token']);
-		}
-		
-		curl_setopt($ch, CURLOPT_URL, $url);
+		// Add a bearer token
+		$headers[] = sprintf('Authorization: Bearer %s', $credentials['access_token']);
 		
 		return true;
 	}
